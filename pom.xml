@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.pranshu</groupId>
 	<artifactId>crypto-price-tracker</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>crypto-price-tracker</name>
 	<description>Simple Cryptocurrency price tracker</description>
 	<properties>

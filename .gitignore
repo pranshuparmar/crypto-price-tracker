@@ -1,5 +1,6 @@
-HELP.md
-target/
+target/*
+!target/crypto-price-tracker-0.0.1.jar
+
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -31,4 +32,3 @@ build/
 
 ### VS Code ###
 .vscode/
-*.jar

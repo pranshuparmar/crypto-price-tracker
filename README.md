@@ -7,4 +7,4 @@ application.properties file can be used to provide required configuration
     * alert.email - this property can be used to set the email where email should be sent if price crosses either threshold
 
 Command to run the application
-    mvn spring-boot:run
+    java -jar target/crypto-price-tracker-0.0.1.jar
