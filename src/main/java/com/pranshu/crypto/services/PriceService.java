@@ -10,9 +10,15 @@ import com.pranshu.crypto.models.entities.CryptoPriceEntity;
 import com.pranshu.crypto.repositories.CryptoPriceRepository;
 import static com.pranshu.crypto.utils.Constants.*;
 import static com.pranshu.crypto.utils.Mapper.*;
+
+import com.pranshu.crypto.utils.OffsetBasedPageRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +54,9 @@ public class PriceService {
     @Value("${coingecko.url.base}")
     private String coingeckoBaseUrl;
 
+    @Value("${app.url.price.btc}")
+    private String btcPriceUrl;
+
     @Value("${alert.email}")
     private String alertEmail;
 
@@ -62,6 +71,7 @@ public class PriceService {
         LocalDate dateToConsider;
         if(date == null || date.isBlank()) {
             dateToConsider = LocalDate.now(); // default to current date if it is not passed
+            date = dateToConsider.format(dateTimeFormatter);
         } else {
             try {
                 dateToConsider = LocalDate.parse(date, dateTimeFormatter);
@@ -75,11 +85,24 @@ public class PriceService {
         if(limit == null) {
             limit = 100;
         }
-        log.info("date: {}, offset: {}, limit: {}", date, offset, limit);
+        log.debug("date: {}, offset: {}, limit: {}", date, offset, limit);
+
+        Pageable pageable = new OffsetBasedPageRequest(offset, limit, Sort.by("createdAt"));//PageRequest.of(offset, limit, Sort.by("createdAt"));
+        Page<CryptoPriceEntity> cryptoPriceEntityPage = cryptoPriceRepository.findBySymbolAndCreatedAtBetween(SYMBOL.BITCOIN, dateToConsider.atStartOfDay(), dateToConsider.plusDays(1).atStartOfDay(), pageable);
+        Long totalRecords = cryptoPriceEntityPage.getTotalElements();
+        Integer lastPagedRecordNumber = offset + limit;
+
         PriceResponseDTO priceResponseDTO = new PriceResponseDTO();
-        List<CryptoPriceEntity> cryptoPriceEntityList = cryptoPriceRepository.findBySymbolAndCreatedAtBetween(SYMBOL.BITCOIN, dateToConsider.atStartOfDay(), dateToConsider.plusDays(1).atStartOfDay());
-        List<CoinPriceDTO> coinPriceDTOList = mapCryptoPriceEntityToCoinPriceDTO(cryptoPriceEntityList);
+        priceResponseDTO.setUrl(btcPriceUrl + "?date=" + date + "&offset=" + offset + "&limit=" + limit);
+        if(lastPagedRecordNumber < totalRecords) {
+            priceResponseDTO.setNext(btcPriceUrl + "?date=" + date + "&offset=" + lastPagedRecordNumber + "&limit=" + limit);
+        } else {
+            priceResponseDTO.setNext(btcPriceUrl + "?date=" + date + "&offset=" + totalRecords + "&limit=" + 0);
+        }
+        priceResponseDTO.setCount(totalRecords);
+        List<CoinPriceDTO> coinPriceDTOList = mapCryptoPriceEntityToCoinPriceDTO(cryptoPriceEntityPage.get());
         priceResponseDTO.setData(coinPriceDTOList);
+
         return priceResponseDTO;
     }
 
